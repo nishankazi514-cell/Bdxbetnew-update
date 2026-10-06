@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: bdxbet-ludo
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app
+    healthCheckPath: /health
