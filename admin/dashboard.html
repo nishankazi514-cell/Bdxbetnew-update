@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1.0"
+>
+
+<title>BDXbet Admin Dashboard</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    background:#030712;
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+}
+
+header{
+    position:sticky;
+    top:0;
+    z-index:5;
+    background:#0b1220;
+    border-bottom:1px solid #263247;
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    font-weight:800;
+    color:#f5a623;
+    font-size:21px;
+}
+
+button{
+    border:0;
+    border-radius:9px;
+    padding:10px 13px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.logout{
+    background:#3f1720;
+    color:#fecaca;
+}
+
+main{
+    max-width:1100px;
+    margin:auto;
+    padding:18px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:
+        repeat(2,1fr);
+    gap:12px;
+}
+
+.stat{
+    background:#0b1220;
+    border:1px solid #263247;
+    border-radius:14px;
+    padding:16px;
+}
+
+.stat small{
+    color:#94a3b8;
+}
+
+.stat strong{
+    display:block;
+    font-size:25px;
+    margin-top:7px;
+}
+
+.card{
+    background:#0b1220;
+    border:1px solid #263247;
+    border-radius:14px;
+    padding:16px;
+    margin-top:14px;
+}
+
+h2{
+    font-size:18px;
+    margin:0 0 14px;
+}
+
+.row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+
+input,
+select,
+textarea{
+
+    background:#111827;
+    border:1px solid #334155;
+    color:#fff;
+    border-radius:9px;
+    padding:10px;
+}
+
+input{
+    min-width:150px;
+}
+
+.action{
+    background:#f5a623;
+    color:#111;
+}
+
+.secondary{
+    background:#1e293b;
+    color:#e2e8f0;
+}
+
+.danger{
+    background:#7f1d1d;
+    color:#fecaca;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+
+th,
+td{
+    padding:10px 7px;
+    border-bottom:1px solid #1e293b;
+    text-align:left;
+    vertical-align:top;
+}
+
+th{
+    color:#94a3b8;
+}
+
+.tablewrap{
+    overflow:auto;
+}
+
+.badge{
+    padding:4px 7px;
+    border-radius:999px;
+    background:#172033;
+}
+
+#msg{
+    display:none;
+    margin-top:10px;
+    padding:10px;
+    border-radius:9px;
+    background:#172033;
+}
+
+@media(min-width:700px){
+
+    .grid{
+        grid-template-columns:
+            repeat(4,1fr);
+    }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+    <div class="logo">
+        BDXbet ADMIN
+    </div>
+
+    <button
+        class="logout"
+        onclick="logout()"
+    >
+        Logout
+    </button>
+
+</header>
+
+
+<main>
+
+<div id="msg"></div>
+
+
+<!-- STATS -->
+
+<div class="grid">
+
+    <div class="stat">
+
+        <small>Total Users</small>
+
+        <strong id="users">
+            0
+        </strong>
+
+    </div>
+
+
+    <div class="stat">
+
+        <small>Active Users</small>
+
+        <strong id="active">
+            0
+        </strong>
+
+    </div>
+
+
+    <div class="stat">
+
+        <small>Total Balance</small>
+
+        <strong id="balance">
+            ৳0
+        </strong>
+
+    </div>
+
+
+    <div class="stat">
+
+        <small>Pending Requests</small>
+
+        <strong id="pending">
+            0
+        </strong>
+
+    </div>
+
+</div>
+
+
+<!-- WEBSITE CONTROL -->
+
+<section class="card">
+
+<h2>
+    Website Controls
+</h2>
+
+
+<div class="row">
+
+<button
+    id="ludoBtn"
+    class="action"
+    onclick="toggleSetting('ludo_enabled')"
+>
+    Ludo
+</button>
+
+
+<button
+    id="maintenanceBtn"
+    class="secondary"
+    onclick="toggleSetting('maintenance')"
+>
+    Maintenance
+</button>
+
+</div>
+
+
+<div
+    class="row"
+    style="margin-top:10px"
+>
+
+<input
+    id="bonus"
+    type="number"
+    placeholder="Welcome bonus"
+>
+
+
+<input
+    id="jackpot"
+    type="number"
+    placeholder="Jackpot"
+>
+
+
+<input
+    id="announcement"
+    style="min-width:220px"
+    placeholder="Announcement"
+>
+
+
+<button
+    class="action"
+    onclick="saveSettings()"
+>
+    Save Settings
+</button>
+
+</div>
+
+</section>
+
+
+<!-- USERS -->
+
+<section class="card">
+
+<h2>
+    Users
+</h2>
+
+
+<div class="row">
+
+<input
+    id="search"
+    placeholder="Search UID / phone / name"
+>
+
+
+<button
+    class="secondary"
+    onclick="loadUsers()"
+>
+    Search
+</button>
+
+
+<button
+    class="secondary"
+    onclick="loadUsers()"
+>
+    Refresh
+</button>
+
+</div>
+
+
+<div
+    class="tablewrap"
+    style="margin-top:12px"
+>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>UID</th>
+<th>Name</th>
+<th>Phone</th>
+<th>Balance</th>
+<th>Status</th>
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="usersTable"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+
+<!-- TRANSACTIONS -->
+
+<section class="card">
+
+<h2>
+    Transactions
+</h2>
+
+
+<div class="row">
+
+<select id="txStatus">
+
+<option value="">
+    All
+</option>
+
+<option value="pending">
+    Pending
+</option>
+
+<option value="approved">
+    Approved
+</option>
+
+<option value="rejected">
+    Rejected
+</option>
+
+</select>
+
+
+<button
+    class="secondary"
+    onclick="loadTransactions()"
+>
+    Refresh
+</button>
+
+</div>
+
+
+<div
+    class="tablewrap"
+    style="margin-top:12px"
+>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+<th>UID</th>
+<th>Type</th>
+<th>Amount</th>
+<th>Status</th>
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="txTable"></tbody>
+
+</table>
+
+</div>
+
+</section>
+
+</main>
+
+
+<script>
+
+const token =
+    localStorage.getItem(
+        "bdxbet_admin_token"
+    );
+
+
+if(!token){
+
+    window.location.href =
+        "/admin/login.html";
+
+}
+
+
+async function api(url, options = {}){
+
+    options.headers =
+        Object.assign(
+
+            {
+                "Content-Type":
+                    "application/json",
+
+                "Authorization":
+                    "Bearer " + token
+            },
+
+            options.headers || {}
+
+        );
+
+
+    const response =
+        await fetch(
+            url,
+            options
+        );
+
+
+    if(response.status === 401){
+
+        localStorage.removeItem(
+            "bdxbet_admin_token"
+        );
+
+        window.location.href =
+            "/admin/login.html";
+
+        throw new Error(
+            "Session expired"
+        );
+
+    }
+
+
+    const data =
+        await response
+            .json()
+            .catch(
+                () => ({})
+            );
+
+
+    if(
+        !response.ok ||
+        data.ok === false
+    ){
+
+        throw new Error(
+            data.error ||
+            "Request failed"
+        );
+
+    }
+
+
+    return data;
+
+}
+
+
+function msg(text){
+
+    const element =
+        document.getElementById(
+            "msg"
+        );
+
+    element.textContent =
+        text;
+
+    element.style.display =
+        "block";
+
+
+    setTimeout(
+        () => {
+
+            element.style.display =
+                "none";
+
+        },
+        2500
+    );
+
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+async function loadStats(){
+
+    const data =
+        await api(
+            "/api/admin/stats"
+        );
+
+
+    document.getElementById(
+        "users"
+    ).textContent =
+        data.total_users;
+
+
+    document.getElementById(
+        "active"
+    ).textContent =
+        data.active_users;
+
+
+    document.getElementById(
+        "balance"
+    ).textContent =
+        "৳" +
+        Number(
+            data.total_balance || 0
+        ).toFixed(2);
+
+
+    document.getElementById(
+        "pending"
+    ).textContent =
+
+        Number(
+            data.pending_deposits || 0
+        )
+
+        +
+
+        Number(
+            data.pending_withdrawals || 0
+        );
+
+
+    const ludo =
+        document.getElementById(
+            "ludoBtn"
+        );
+
+
+    ludo.textContent =
+        "Ludo: " +
+        (
+            data.ludo_enabled
+            ? "ON"
+            : "OFF"
+        );
+
+
+    ludo.className =
+        data.ludo_enabled
+        ? "action"
+        : "danger";
+
+
+    const maintenance =
+        document.getElementById(
+            "maintenanceBtn"
+        );
+
+
+    maintenance.textContent =
+        "Maintenance: " +
+        (
+            data.maintenance
+            ? "ON"
+            : "OFF"
+        );
+
+
+    maintenance.className =
+        data.maintenance
+        ? "danger"
+        : "secondary";
+
+
+    document.getElementById(
+        "bonus"
+    ).value =
+        data.welcome_bonus;
+
+
+    document.getElementById(
+        "jackpot"
+    ).value =
+        data.jackpot;
+
+
+    document.getElementById(
+        "announcement"
+    ).value =
+        data.announcement;
+
+}
+
+
+/* =========================
+   USERS
+========================= */
+
+async function loadUsers(){
+
+    const search =
+        document.getElementById(
+            "search"
+        ).value.trim();
+
+
+    const data =
+        await api(
+            "/api/admin/users?search=" +
+            encodeURIComponent(
+                search
+            )
+        );
+
+
+    const table =
+        document.getElementById(
+            "usersTable"
+        );
+
+
+    table.innerHTML =
+        data.users.map(
+
+            user => `
+
+<tr>
+
+<td>
+    <b>${esc(user.uid)}</b>
+</td>
+
+<td>
+    ${esc(user.name || "")}
+</td>
+
+<td>
+    ${esc(user.phone || "")}
+</td>
+
+<td>
+    ৳${Number(
+        user.balance || 0
+    ).toFixed(2)}
+</td>
+
+<td>
+    <span class="badge">
+        ${esc(user.status)}
+    </span>
+</td>
+
+<td>
+
+<button
+    class="action"
+    onclick="balance(
+        '${esc(user.uid)}',
+        'add'
+    )"
+>
+    + Balance
+</button>
+
+<button
+    class="secondary"
+    onclick="balance(
+        '${esc(user.uid)}',
+        'subtract'
+    )"
+>
+    - Balance
+</button>
+
+<button
+    class="${
+        user.status === "active"
+        ? "danger"
+        : "action"
+    }"
+    onclick="statusUser(
+        '${esc(user.uid)}',
+        '${
+            user.status === "active"
+            ? "blocked"
+            : "active"
+        }'
+    )"
+>
+
+${
+    user.status === "active"
+    ? "Block"
+    : "Unblock"
+}
+
+</button>
+
+</td>
+
+</tr>
+
+`
+
+        ).join("");
+
+}
+
+
+/* =========================
+   BALANCE
+========================= */
+
+async function balance(
+    uid,
+    action
+){
+
+    const amount =
+        prompt(
+            (
+                action === "add"
+                ? "Add"
+                : "Subtract"
+            ) +
+
+            " amount for " +
+
+            uid
+        );
+
+
+    if(amount === null)
+        return;
+
+
+    const number =
+        Number(amount);
+
+
+    if(
+        !number ||
+        number <= 0
+    ){
+
+        alert(
+            "Invalid amount"
+        );
+
+        return;
+
+    }
+
+
+    await api(
+
+        "/api/admin/users/" +
+
+        encodeURIComponent(uid) +
+
+        "/balance",
+
+        {
+
+            method:"POST",
+
+            body:JSON.stringify({
+
+                amount:number,
+
+                action:action
+
+            })
+
+        }
+
+    );
+
+
+    msg(
+        "Balance updated"
+    );
+
+
+    loadStats();
+    loadUsers();
+
+}
+
+
+/* =========================
+   USER STATUS
+========================= */
+
+async function statusUser(
+    uid,
+    status
+){
+
+    if(
+        !confirm(
+            "Change " +
+            uid +
+            " to " +
+            status +
+            "?"
+        )
+    ){
+
+        return;
+
+    }
+
+
+    await api(
+
+        "/api/admin/users/" +
+
+        encodeURIComponent(uid) +
+
+        "/status",
+
+        {
+
+            method:"POST",
+
+            body:JSON.stringify({
+
+                status:status
+
+            })
+
+        }
+
+    );
+
+
+    msg(
+        "User status updated"
+    );
+
+
+    loadUsers();
+    loadStats();
+
+}
+
+
+/* =========================
+   TRANSACTIONS
+========================= */
+
+async function loadTransactions(){
+
+    const status =
+        document.getElementById(
+            "txStatus"
+        ).value;
+
+
+    const data =
+        await api(
+
+            "/api/admin/transactions?status=" +
+
+            encodeURIComponent(
+                status
+            )
+
+        );
+
+
+    const table =
+        document.getElementById(
+            "txTable"
+        );
+
+
+    table.innerHTML =
+        data.transactions.map(
+
+            tx => `
+
+<tr>
+
+<td>
+    ${tx.id}
+</td>
+
+<td>
+    ${esc(tx.uid)}
+</td>
+
+<td>
+    ${esc(tx.type)}
+</td>
+
+<td>
+    ৳${Number(
+        tx.amount
+    ).toFixed(2)}
+</td>
+
+<td>
+    ${esc(tx.status)}
+</td>
+
+<td>
+
+${
+    tx.status === "pending"
+
+    ?
+
+    `
+
+    <button
+        class="action"
+        onclick="transactionStatus(
+            ${tx.id},
+            'approved'
+        )"
+    >
+        Approve
+    </button>
+
+    <button
+        class="danger"
+        onclick="transactionStatus(
+            ${tx.id},
+            'rejected'
+        )"
+    >
+        Reject
+    </button>
+
+    `
+
+    :
+
+    "—"
+}
+
+</td>
+
+</tr>
+
+`
+
+        ).join("");
+
+}
+
+
+/* =========================
+   TRANSACTION STATUS
+========================= */
+
+async function transactionStatus(
+    id,
+    status
+){
+
+    if(
+        !confirm(
+            status +
+            " transaction #" +
+            id +
+            "?"
+        )
+    ){
+
+        return;
+
+    }
+
+
+    await api(
+
+        "/api/admin/transactions/" +
+
+        id +
+
+        "/status",
+
+        {
+
+            method:"POST",
+
+            body:JSON.stringify({
+
+                status:status
+
+            })
+
+        }
+
+    );
+
+
+    msg(
+        "Transaction updated"
+    );
+
+
+    loadTransactions();
+    loadStats();
+
+}
+
+
+/* =========================
+   SETTINGS
+========================= */
+
+async function toggleSetting(
+    key
+){
+
+    const data =
+        await api(
+            "/api/admin/settings"
+        );
+
+
+    const current =
+        data.settings[key];
+
+
+    await api(
+
+        "/api/admin/settings",
+
+        {
+
+            method:"POST",
+
+            body:JSON.stringify({
+
+                [key]:!current
+
+            })
+
+        }
+
+    );
+
+
+    msg(
+        "Setting updated"
+    );
+
+
+    loadStats();
+
+}
+
+
+async function saveSettings(){
+
+    await api(
+
+        "/api/admin/settings",
+
+        {
+
+            method:"POST",
+
+            body:JSON.stringify({
+
+                welcome_bonus:
+                    document.getElementById(
+                        "bonus"
+                    ).value,
+
+                jackpot:
+                    document.getElementById(
+                        "jackpot"
+                    ).value,
+
+                announcement:
+                    document.getElementById(
+                        "announcement"
+                    ).value
+
+            })
+
+        }
+
+    );
+
+
+    msg(
+        "Settings saved"
+    );
+
+
+    loadStats();
+
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+function logout(){
+
+    localStorage.removeItem(
+        "bdxbet_admin_token"
+    );
+
+    window.location.href =
+        "/admin/login.html";
+
+}
+
+
+/* =========================
+   HTML ESCAPE
+========================= */
+
+function esc(value){
+
+    return String(
+        value ?? ""
+    ).replace(
+
+        /[&<>"']/g,
+
+        function(match){
+
+            return {
+
+                "&":"&amp;",
+                "<":"&lt;",
+                ">":"&gt;",
+                '"':"&quot;",
+                "'":"&#39;"
+
+            }[match];
+
+        }
+
+    );
+
+}
+
+
+/* =========================
+   LOAD
+========================= */
+
+Promise.all([
+
+    loadStats(),
+
+    loadUsers(),
+
+    loadTransactions()
+
+]).catch(
+
+    error => {
+
+        msg(
+            error.message
+        );
+
+    }
+
+);
+
+</script>
+
+</body>
+</html>
