@@ -5247,7 +5247,8 @@
       if (game.turn) {
         const idx = activePlayers.indexOf(game.turn);
         if (idx >= 0) turnIndex = idx;
-        canRoll = (game.turn === onlineMySeat) && game.turnState === 'rolling';
+        canRoll = !adminPausedByServer &&
+                   (game.turn === onlineMySeat) && game.turnState === 'rolling';
         updateTurnUI();
       }
       if (game.dice) lastAppliedDiceSeq = game.dice.seq || 0;
@@ -5261,6 +5262,7 @@
     function attachOnlineGameListeners() {
       if (!fbReady || !onlineRoomCode) return;
       if (onlineGameRef) { try { onlineGameRef.off(); } catch(e){} }
+      attachAdminControlListener();
       onlineGameRef = fbDB.ref('rooms/' + onlineRoomCode + '/game');
       onlineGameRef.on('value', (snap) => {
         const game = snap.val();
@@ -5293,7 +5295,67 @@
       if (onlineRoomCode && fbReady) {
         try { fbDB.ref('rooms/' + onlineRoomCode + '/emote').off(); } catch(e){}
       }
+      detachAdminControlListener();
     }
+
+    // ===== ADMIN CONTROL LISTENER =====
+    let onlineAdminControlRef = null;
+    let adminPausedByServer = false;
+
+    function attachAdminControlListener() {
+      if (!fbReady || !onlineRoomCode) return;
+      if (onlineAdminControlRef) { try { onlineAdminControlRef.off(); } catch(e){} }
+      onlineAdminControlRef = fbDB.ref('rooms/' + onlineRoomCode + '/adminControl');
+      onlineAdminControlRef.on('value', (snap) => {
+        const ctl = snap.val();
+        if (!ctl || !ctl.action) return;
+
+        if (ctl.action === 'pause') {
+          adminPausedByServer = true;
+          canRoll = false;
+          const el = document.getElementById('status-text');
+          if (el) el.innerText = '⏸️ Admin ম্যাচ pause করেছেন';
+          return;
+        }
+
+        if (ctl.action === 'resume') {
+          adminPausedByServer = false;
+          if (onlineGameState && onlineGameState.turn) {
+            canRoll = (onlineGameState.turn === onlineMySeat) &&
+                      onlineGameState.turnState === 'rolling';
+          }
+          const el = document.getElementById('status-text');
+          if (el) el.innerText = '▶️ Admin ম্যাচ resume করেছেন';
+          return;
+        }
+
+        if (ctl.action === 'kick' && ctl.seat === onlineMySeat) {
+          adminPausedByServer = true;
+          canRoll = false;
+          try { clearActiveRoom(); } catch(e){}
+          try { detachOnlineGameListeners(); } catch(e){}
+          isOnlineMatch = false;
+          onlineRoomCode = null;
+          onlineMySeat = null;
+          onlineGameState = null;
+          gameActive = false;
+          const gw = document.getElementById('game-wrapper');
+          const ms = document.getElementById('mode-screen');
+          if (gw) gw.classList.remove('visible');
+          if (ms) ms.classList.remove('hidden');
+          showToast('🚫 Admin আপনাকে Ludo match থেকে সরিয়েছেন');
+        }
+      });
+    }
+
+    function detachAdminControlListener() {
+      if (onlineAdminControlRef) {
+        try { onlineAdminControlRef.off(); } catch(e){}
+        onlineAdminControlRef = null;
+      }
+      adminPausedByServer = false;
+    }
+
 
     function handleOnlineGameUpdate(game) {
       if (game.winner) {
