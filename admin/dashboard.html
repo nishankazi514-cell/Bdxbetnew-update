@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BDXbet Ludo Admin Control</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#040813;color:#eef5ff;font-family:Arial,sans-serif}
+header{position:sticky;top:0;z-index:5;padding:14px 16px;background:#091426;border-bottom:1px solid #b9871c;display:flex;align-items:center;gap:10px}
+h1{font-size:18px;margin:0;color:#ffd83d;flex:1}.wrap{max-width:1100px;margin:auto;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.card{background:linear-gradient(160deg,#102344,#07101f);border:1px solid #29436f;border-radius:15px;padding:14px}
+.room{cursor:pointer}.room.sel{border-color:#ffd23a;box-shadow:0 0 20px #ffd23a22}
+.small{font-size:11px;color:#90add7}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+button,select,input{border:1px solid #3a5682;background:#0a1528;color:#fff;border-radius:9px;padding:9px;font-weight:700}
+button{cursor:pointer}.primary{background:#ffd23a;color:#1a1300;border-color:#ffd23a}.danger{background:#5e1820;border-color:#a93642}.ok{background:#124a35;border-color:#1c8b63}
+#rooms{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}.player{padding:8px;margin-top:6px;background:#081426;border-radius:9px;display:flex;align-items:center;gap:8px}.player span:first-child{flex:1}
+label{font-size:11px;color:#90add7;display:block;margin-top:9px}input,select{width:100%}
+.notice{padding:10px;border-radius:10px;background:#201b09;color:#ffd83d;font-size:12px;margin-bottom:12px}
+pre{white-space:pre-wrap;max-height:300px;overflow:auto;font-size:10px;color:#b9c8df}
+</style></head>
+<body>
+<header><h1>🎮 BDXbet — Ludo Admin Control</h1><button onclick="logout()">Logout</button></header>
+<div class="wrap">
+<div id="notice" class="notice">Loading Firebase rooms…</div>
+<div class="grid">
+<section class="card"><b>🏠 Ludo Rooms</b><div class="row"><button class="primary" onclick="loadRooms()">↻ Refresh</button></div><div id="rooms"></div></section>
+<section class="card">
+<b>🎛️ Selected Room</b><div id="selected" class="small" style="margin-top:8px">কোনো room select করা হয়নি</div>
+<div id="controls"></div>
+</section>
+</div>
+</div>
+<script>
+const T=localStorage.getItem('bdxbet_ludo_admin_token'); if(!T) location.href='/login';
+let selected=null;
+const api=async(u,o={})=>{o.headers={...(o.headers||{}),'X-Admin-Token':T,'Content-Type':'application/json'};const r=await fetch(u,o);const d=await r.json().catch(()=>({}));if(r.status===401){localStorage.removeItem('bdxbet_ludo_admin_token');location.href='/login'}if(!r.ok)throw Error(d.error||'Request failed');return d};
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+async function loadRooms(){
+ try{const d=await api('/api/ludo/rooms');renderRooms(d.rooms);document.getElementById('notice').textContent=`Firebase connected • ${d.rooms.length} room(s)`}catch(e){document.getElementById('notice').textContent='❌ '+e.message}
+}
+function renderRooms(rs){
+ const el=document.getElementById('rooms');el.innerHTML='';
+ if(!rs.length){el.innerHTML='<div class="small" style="margin-top:10px">No Ludo rooms found.</div>';return}
+ rs.forEach(r=>{
+  const div=document.createElement('div');div.className='card room '+(selected?.roomCode===r.roomCode?'sel':'');
+  div.innerHTML=`<b>${esc(r.roomCode)}</b> • ${esc(r.mode||'')}<div class="small">${esc(r.status||'waiting')} • started: ${r.started?'YES':'NO'}</div>
+  <div class="small">Entry: ${r.amount||0} • Pool: ${r.pool||0} • Prize: ${r.prize||0}</div>
+  <div>${(r.playerList||[]).map(p=>`<div class="player"><span">${esc(p.avatar)} ${esc(p.name)} <small>(${esc(p.seat)})</small></span><button class="danger" onclick="event.stopPropagation();kick('${r.roomCode}','${p.seat}')">Kick</button></div>`).join('')}</div>`;
+  div.onclick=()=>selectRoom(r.roomCode);el.appendChild(div)
+ })
+}
+async function selectRoom(code){
+ const d=await api('/api/ludo/rooms/'+encodeURIComponent(code));selected=d.room;
+ document.getElementById('selected').innerHTML=`<b>${esc(selected.roomCode)}</b><br>Mode: ${esc(selected.mode)} • Status: ${esc(selected.status)} • Turn: ${esc(selected.game?.turn||'—')}<br>Winner: ${esc(selected.game?.winner||'—')}`;
+ document.getElementById('controls').innerHTML=`
+ <div class="row">
+  <button class="primary" onclick="act('/start')">▶ Start</button><button class="ok" onclick="act('/pause')">⏸ Pause</button><button class="ok" onclick="act('/resume')">▶ Resume</button><button class="danger" onclick="act('/end')">⛔ End</button><button onclick="act('/reset-game')">🔄 Reset</button><button class="danger" onclick="delRoom()">🗑 Delete Room</button>
+ </div>
+ <label>Turn control</label><div class="row"><select id="turn"><option>blue</option><option>red</option><option>green</option><option>yellow</option></select><button class="primary" onclick="turn()">Set Turn</button></div>
+ <label>Force Dice</label><div class="row"><select id="dseat"><option>blue</option><option>red</option><option>green</option><option>yellow</option></select><select id="dice"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><button class="primary" onclick="dice()">Set Dice</button></div>
+ <label>Pawn position (-1 home, 0..56)</label><div class="row"><select id="pseat"><option>blue</option><option>red</option><option>green</option><option>yellow</option></select><select id="pidx"><option>0</option><option>1</option><option>2</option><option>3</option></select><input id="step" type="number" min="-1" max="56" value="0"><button class="primary" onclick="pawn()">Set Pawn</button></div>
+ <label>Force winner</label><div class="row"><select id="winner"><option>blue</option><option>red</option><option>green</option><option>yellow</option></select><button class="primary" onclick="winner()">Set Winner</button></div>
+ <details style="margin-top:12px"><summary>Raw game state</summary><pre>${esc(JSON.stringify(selected.game||{},null,2))}</pre></details>`;
+ loadRooms();
+}
+async function act(path,body){if(!selected)return;try{await api('/api/ludo/rooms/'+encodeURIComponent(selected.roomCode)+path,{method:'POST',body:JSON.stringify(body||{})});await selectRoom(selected.roomCode)}catch(e){alert(e.message)}}
+async function turn(){await act('/turn',{seat:document.getElementById('turn').value})}
+async function dice(){await act('/dice',{seat:document.getElementById('dseat').value,value:+document.getElementById('dice').value})}
+async function pawn(){await act('/pawn',{seat:document.getElementById('pseat').value,index:+document.getElementById('pidx').value,step:+document.getElementById('step').value})}
+async function winner(){await act('/winner',{seat:document.getElementById('winner').value})}
+async function kick(code,seat){if(!confirm(`Kick ${seat}?`))return;try{await api('/api/ludo/rooms/'+encodeURIComponent(code)+'/kick',{method:'POST',body:JSON.stringify({seat})});loadRooms()}catch(e){alert(e.message)}}
+async function delRoom(){if(!selected||!confirm('Delete this room permanently?'))return;try{await api('/api/ludo/rooms/'+encodeURIComponent(selected.roomCode),{method:'DELETE'});selected=null;document.getElementById('controls').innerHTML='';loadRooms()}catch(e){alert(e.message)}}
+async function logout(){try{await api('/api/admin/logout',{method:'POST'})}catch(e){}localStorage.removeItem('bdxbet_ludo_admin_token');location.href='/login'}
+loadRooms();setInterval(loadRooms,5000);
+</script></body></html>
